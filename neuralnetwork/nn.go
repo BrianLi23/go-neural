@@ -348,7 +348,7 @@ func LoadImageDataset(directory string) ([][]float64, []string, error) {
 
 // Split the dataset into training and testing sets
 func SplitDataset(images [][]float64, labels []string, trainSize float64, seed int) ([][]float64, []string, [][]float64, []string) {
-	r := rand.New(rand.NewSource(int64(seed)))
+	r := rand.NewPCG(uint64(seed), 1)
 	n := len(images)
 	perm := r.Perm(n)
 
