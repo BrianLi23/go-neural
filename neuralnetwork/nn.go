@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"path/filepath"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -24,18 +25,20 @@ type NeuralNetwork struct {
 	hiddenWeights *mat.Dense // These values hold a dense matrix type, where most of the elements are non-zero.
 	outputWeights *mat.Dense
 	learningRate  float64
+	seed          int
 }
 
 // Holds the type of the neural network, uses a pointer to the struct
 // This is because we want to modify the struct in the methods
 
-func NewNeuralNetwork(inputNodes, hiddenNodes, outputNodes int, learningRate float64) *NeuralNetwork {
+func NewNeuralNetwork(inputNodes, hiddenNodes, outputNodes int, learningRate float64, seed int) *NeuralNetwork {
 	// Initialize the neural network with the provided values
 	nn := &NeuralNetwork{
 		inputNodes:   inputNodes,
 		hiddenNodes:  hiddenNodes,
 		outputNodes:  outputNodes,
 		learningRate: learningRate,
+		seed:         seed,
 	}
 
 	// Initialize the weights with random values
@@ -215,7 +218,7 @@ func matrixPrint(X mat.Matrix) {
 	fmt.Printf("%v\n", fa)
 }
 
-func save(filename string, nn *NeuralNetwork) {
+func SaveNeuralNetwork(filename string, nn *NeuralNetwork) {
 	// Save the neural network to a file
 	h, error := os.Create(filename)
 	if error != nil {
@@ -235,7 +238,7 @@ func save(filename string, nn *NeuralNetwork) {
 
 }
 
-func load(filename string) *NeuralNetwork {
+func LoadNeuralNetwork(filename string) *NeuralNetwork {
 	// Load a neural network from a file
 	h, error := os.Open(filename)
 	if error != nil {
@@ -257,9 +260,9 @@ func load(filename string) *NeuralNetwork {
 }
 
 // Function to predict the image
-func predictImage(nn *NeuralNetwork, imagePath string) int {
+func PredictImage(nn *NeuralNetwork, imagePath string) int {
 	// Load image from file
-	image, err := loadImage(imagePath)
+	image, err := LoadImage(imagePath)
 	if err != nil {
 		fmt.Println("Error loading image:", err)
 		return -1
@@ -280,7 +283,7 @@ func predictImage(nn *NeuralNetwork, imagePath string) int {
 
 }
 
-func loadImage(filename string) ([]float64, error) {
+func LoadImage(filename string) ([]float64, error) {
 	// Load the image from the file
 	file, err := os.Open(filename)
 	if err != nil {
@@ -312,6 +315,55 @@ func loadImage(filename string) ([]float64, error) {
 
 	return pixels, nil
 
+}
+
+func LoadImageDataset(directory string) ([][]float64, []string, error) {
+	var images [][]float64
+	var labels []string
+
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			fmt.Println("Error reading directory:", err)
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) == ".png" || filepath.Ext(path) == ".jpg" || filepath.Ext(path) == ".jpeg" {
+			imgData, err := LoadImage(path)
+			if err != nil {
+				return nil
+			}
+			images = append(images, imgData)
+			labels = append(labels, path) // Use filename as label (or extract from path)
+		}
+		return nil
+	})
+
+	return images, labels, err
+}
+
+// Split the dataset into training and testing sets
+func SplitDataset(images [][]float64, labels []string, trainSize float64, seed int) ([][]float64, []string, [][]float64, []string) {
+	r := rand.New(rand.NewSource(int64(seed)))
+	n := len(images)
+	perm := r.Perm(n)
+
+	// Shuffle dataset deterministically
+	shuffledImages := make([][]float64, n)
+	shuffledLabels := make([]string, n)
+
+	for i, idx := range perm {
+		shuffledImages[i] = images[idx]
+		shuffledLabels[i] = labels[idx]
+	}
+
+	// Split into training and testing sets
+	trainIndex := int(trainSize * float64(n))
+	return shuffledImages[:trainIndex], shuffledLabels[:trainIndex], shuffledImages[trainIndex:], shuffledLabels[trainIndex:]
 }
 
 func argmax(m mat.Matrix) int {
