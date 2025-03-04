@@ -12,6 +12,7 @@ A fully implemented **Neural Network** with **concurrent training**, written in 
 ---
 
 ## 📂 Project Structure
+```
 go-neural/
 │── dataset/                 # Training dataset (e.g., MNIST)
 │   ├── 0/                   # Images of digit '0'
@@ -24,7 +25,7 @@ go-neural/
 │── go.sum                   # Dependency checksums
 │── main.go                  # Entry point
 │── README.md                # Project documentation
-
+```
 ---
 
 ## 🛠️ **Installation**
@@ -61,10 +62,6 @@ Predicts digit classes (0-9) from trained data -->
 - Optimize GPU performance
 - Add more dataset compatibility
 - Improve training accuracy with Adam optimizer
-
-🤝 Contributing
-Feel free to contribute! Open an issue or submit a pull request.
-
 
 
 
