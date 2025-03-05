@@ -3,13 +3,26 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/BrianLi23/go-neural/neuralnetwork"
 )
 
-// Simple function that returns a string
-func getGreeting() string {
-	return "Welcome to Go!"
+func extractLabelFromFilename(filename string) (int, error) {
+	base := filepath.Base(filename)
+	base = strings.TrimSuffix(base, filepath.Ext(base))
+	parts := strings.Split(base, "_")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("unexpected filename format: %s", filename)
+	}
+
+	label, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		return 0, fmt.Errorf("could not parse label from filename %s: %v", filename, err)
+	}
+	return label, nil
 }
 
 func generateTargetVector(label int) []float64 {

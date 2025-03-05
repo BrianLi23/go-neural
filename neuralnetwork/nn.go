@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"math"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -45,8 +44,8 @@ func NewNeuralNetwork(inputNodes, hiddenNodes, outputNodes int, learningRate flo
 	// Think about if I have 4 inputs and 3 hidden nodes, I need a 3x4 matrix to hold the weights
 	// hiddenActivations = hiddenWeights * inputs
 	// (3 × 4) × (4 × 1) = (3 × 1)
-	nn.hiddenWeights = mat.NewDense(nn.hiddenNodes, nn.inputNodes, randomArray(nn.hiddenNodes*nn.inputNodes, float64(nn.inputNodes)))
-	nn.outputWeights = mat.NewDense(nn.outputNodes, nn.hiddenNodes, randomArray(nn.outputNodes*nn.hiddenNodes, float64(nn.hiddenNodes)))
+	nn.hiddenWeights = mat.NewDense(nn.hiddenNodes, nn.inputNodes, randomArray(nn.hiddenNodes*nn.inputNodes, float64(nn.inputNodes), nn.seed))
+	nn.outputWeights = mat.NewDense(nn.outputNodes, nn.hiddenNodes, randomArray(nn.outputNodes*nn.hiddenNodes, float64(nn.hiddenNodes), nn.seed))
 
 	return nn
 }
@@ -89,133 +88,6 @@ func (nn *NeuralNetwork) Predict(inputs []float64) mat.Matrix {
 	finalOutputs := apply(sigmoid, finalInputs)
 
 	return finalOutputs
-}
-
-// // Generates a random array of the specified size
-// func randomArray(size int, v float64) (data []float64) {
-// 	dist := distuv.Uniform{
-// 		Min: -0.5,
-// 		Max: 0.5,
-// 		Source: rand.New(rand.NewSource(
-// 			time.Now().UnixNano())),
-// 	}
-// }
-
-// Defining functions
-func dot(m, n mat.Matrix) mat.Matrix {
-	// Get the dimensions of the input matrices
-	mrows, mcols := m.Dims()
-	nrows, ncols := n.Dims()
-
-	// Check if the matrices are compatible for dot product
-	if mcols != nrows {
-		panic("Matrix dimensions are not compatible for dot product")
-	}
-
-	// Create a new matrix to store the result
-	result := mat.NewDense(mrows, ncols, nil)
-
-	// Perform the dot product
-	result.Mul(m, n)
-
-	return result
-}
-
-func apply(fn func(int, int, float64) float64, m mat.Matrix) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-
-	// Apply the function to each element of the matrix
-	result.Apply(fn, m)
-
-	return result
-}
-
-func scale(scalar float64, m mat.Matrix) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-
-	// Scale each element of the matrix
-	result.Scale(scalar, m)
-
-	return result
-}
-
-func multiply(m, n mat.Matrix) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-
-	// Multiply each element of the matrix
-	result.MulElem(m, n)
-
-	return result
-}
-
-func add(m, n mat.Matrix) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-
-	// Add each element of the matrix
-	result.Add(m, n)
-
-	return result
-}
-
-func subtract(m, n mat.Matrix) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-
-	// Subtract each element of the matrix
-	result.Sub(m, n)
-
-	return result
-}
-
-func sigmoid(row, column int, x float64) float64 {
-	return 1 / (1 + math.Exp(-x))
-}
-
-func dsigmoid(row, column int, x float64) float64 {
-	return x * (1 - x)
-}
-
-func randomArray(size int, v float64) (data []float64) {
-	for i := 0; i < size; i++ {
-		data = append(data, (rand.Float64()*2-1)*v)
-	}
-	return
-}
-
-func addScalar(m mat.Matrix, scalar float64) mat.Matrix {
-	r, c := m.Dims()
-	result := mat.NewDense(r, c, nil)
-	result.Apply(func(i, j int, v float64) float64 { return v + scalar }, m) // A callback function is passed to the Apply method
-	return result
-}
-
-// Used to add a bias node to the matrix, this is used to add a constant value to the input that is scaled when multiplied by the weights
-func addBiasNode(m mat.Matrix) mat.Matrix {
-	r, _ := m.Dims()
-	bias := mat.NewDense(r, 1, nil)
-	for i := 0; i < r; i++ {
-		bias.Set(i, 0, 1)
-	}
-	result := mat.NewDense(0, 0, nil)
-	result.Augment(m, bias)
-
-	return result
-}
-
-// Used to remove the bias node from the matri
-func removeBiasNode(m mat.Matrix) mat.Matrix {
-	r, _ := m.Dims()
-	return mat.DenseCopyOf(m).Slice(0, r, 0, 1)
-}
-
-// pretty print a Gonum matrix
-func matrixPrint(X mat.Matrix) {
-	fa := mat.Formatted(X, mat.Prefix(""), mat.Squeeze())
-	fmt.Printf("%v\n", fa)
 }
 
 func SaveNeuralNetwork(filename string, nn *NeuralNetwork) {
@@ -364,20 +236,4 @@ func SplitDataset(images [][]float64, labels []string, trainSize float64, seed i
 	// Split into training and testing sets
 	trainIndex := int(trainSize * float64(n))
 	return shuffledImages[:trainIndex], shuffledLabels[:trainIndex], shuffledImages[trainIndex:], shuffledLabels[trainIndex:]
-}
-
-func argmax(m mat.Matrix) int {
-	// Find the index of the highest value in the matrix
-	r, _ := m.Dims()
-	maxVal := 0.0
-	index := 0
-	for i := 0; i < r; i++ {
-		value := m.At(i, 0)
-		if value > maxVal {
-			maxVal = value
-			index = i
-		}
-	}
-
-	return index
 }
